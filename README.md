@@ -1,6 +1,7 @@
 <img width="1806" alt="Screenshot 2024-12-18 at 11 20 29 PM" src="https://github.com/user-attachments/assets/662c2d4f-7854-4cbd-84ef-2890a744bbd3" />
 
 # Next Generation AI Search Engine
+Search using DuckDuckGo API, with AI.
 
 ## Features
 ReRank, ReWrite, ReSearch.
