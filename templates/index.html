@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8" />
+    <title>ReSearch: ReRank, ReWrite, ReSearch.</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.22/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #loading-bar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-primary min-h-screen">
+    <!-- ヘッダーセクション -->
+    <header class="text-primary-content">
+        <div class="container mx-auto flex flex-col items-center p-6">
+            <h1 class="text-4xl font-bold">ReSearch</h1>
+            <h2 class="text-lg mt-2">ReRank, ReWrite, ReSearch.</h2>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto mt-8 p-6">
+        <!-- ロード中表示用プログレスバー -->
+        <div id="loading-bar" class="w-full bg-gray-300 rounded-md h-2 mb-4">
+            <div class="bg-primary h-2 rounded-md w-1/2 animate-pulse"></div>
+        </div>
+
+        <!-- 検索フォーム -->
+        <form id="search-form" class="card shadow-lg bg-base-100 p-6 mb-6">
+            <div class="form-control mb-4">
+                <input 
+                    type="text" 
+                    id="query-input" 
+                    name="query" 
+                    placeholder="Find New World..." 
+                    class="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                    required
+                />
+            </div>
+            <button type="submit" class="btn btn-primary w-full">Search</button>
+        </form>
+
+        <!-- 結果表示エリア -->
+        <div id="results-container" class="hidden">
+            <div class="card bg-base-200 shadow-md p-4 mb-6">
+                <h2 class="text-xl font-semibold text-primary">ReWrite</h2>
+                <p id="summary-text" class="mt-2"></p>
+            </div>
+
+            <!-- 質問フォーム -->
+            <form id="answer-form" class="card shadow-lg bg-base-100 p-6 mb-6">
+                <input type="hidden" name="query" id="hidden-query">
+                <div class="form-control mb-4">
+                    <input 
+                        type="text" 
+                        id="research-question-input" 
+                        name="research_question" 
+                        placeholder="Prompt" 
+                        class="input input-bordered w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                        required
+                    />
+                </div>
+                <button type="submit" class="btn btn-primary w-full">Ask</button>
+            </form>
+
+            <!-- 回答ボックス -->
+            <div id="answer-box" class="card bg-primary text-primary-content shadow-md p-4 mb-6 hidden">
+                <h3 class="text-xl font-semibold">ReSearched</h3>
+                <p id="answer-text" class="mt-2"></p>
+            </div>
+
+            <!-- ReRank セクション -->
+            <div class="card bg-base-100 shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-primary mb-4">ReRank</h2>
+                <div id="results-list" class="space-y-4"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- スクリプト -->
+    <script>
+        const searchForm = document.getElementById('search-form');
+        const answerForm = document.getElementById('answer-form');
+        const loadingBar = document.getElementById('loading-bar');
+        const resultsContainer = document.getElementById('results-container');
+        const resultsList = document.getElementById('results-list');
+        const summaryText = document.getElementById('summary-text');
+        const answerBox = document.getElementById('answer-box');
+        const answerText = document.getElementById('answer-text');
+        const hiddenQuery = document.getElementById('hidden-query');
+
+        function showLoading() {
+            loadingBar.style.display = 'block';
+        }
+
+        function hideLoading() {
+            loadingBar.style.display = 'none';
+        }
+
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(searchForm);
+            showLoading();
+            fetch('/search', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                const { query, results, summary } = data;
+                hiddenQuery.value = query;
+                resultsList.innerHTML = '';
+                results.forEach(r => {
+                    const article = document.createElement('div');
+                    article.classList.add('card', 'bg-base-200', 'shadow', 'p-4', 'hover:shadow-xl', 'transition');
+                    article.innerHTML = `
+                        <h3 class="text-lg font-semibold"><a href="${r.href}" target="_blank" class="link link-primary">${r.title}</a></h3>
+                        <p class="text-gray-700 mt-2">${r.body}</p>
+                    `;
+                    resultsList.appendChild(article);
+                });
+
+                summaryText.textContent = summary;
+                resultsContainer.classList.remove('hidden');
+                answerBox.classList.add('hidden');
+            })
+            .catch(err => {
+                console.error(err);
+                hideLoading();
+                alert('検索中にエラーが発生しました。');
+            });
+        });
+
+        answerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(answerForm);
+            showLoading();
+            fetch('/answer', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                answerText.textContent = data.answer;
+                answerBox.classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error(err);
+                hideLoading();
+                alert('回答取得中にエラーが発生しました。');
+            });
+        });
+    </script>
+</body>
+</html>
